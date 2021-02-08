@@ -103,6 +103,8 @@ def get_decile_metrics(gb, target_name, score_name):
 
 def get_decile_attr_metrics(gb, attr):
     output_dict = {}
+    if gb[attr].dtype == 'category':
+        gb[attr] = gb[attr].astype('float')
     output_dict[attr + ' Sum'] = gb[attr].sum()
     output_dict[attr + ' Average'] = np.round(gb[attr].mean()*100, 2)
     series = pd.Series(output_dict)
@@ -116,7 +118,7 @@ def rollup_target_gb_metrics(df):
     name_act_avg_resp = 'Actual % Pos - Avg(' + str(avg_resp) + '%)'
     df[name_act_avg_resp] = df['% of Positive Responders'] - avg_resp
     df['Actual % Pos - Decile Avg Score'] = df['% of Positive Responders'] - df['avg_score']
-
+    
     # Summary Metrics
     sum_metrics = {}
     sum_metrics['count'] = df['count'].sum()
@@ -130,6 +132,7 @@ def rollup_target_gb_metrics(df):
     sum_metrics[name_act_avg_resp] = df[name_act_avg_resp].mean()
     sum_metrics['Actual % Pos - Decile Avg Score'] = np.abs(df['Actual % Pos - Decile Avg Score']).max()
 
+#     df.index = pd.Index(df.index, str)
     df = df.append(pd.Series(sum_metrics, name="Total"))
     return (df)
 
@@ -143,6 +146,7 @@ def decile_tbl(train_preds, temp_y_train, attrs=''):
 
     merged['decile_cuts'] = pd.qcut(merged[score_name].rank(method='first'), [x for x in np.arange(0, 1.1, 0.1)]
                                     , labels=[x for x in range(1, 11)])
+    merged['decile_cuts'] = merged['decile_cuts'].astype(int)
     gb1 = merged.groupby('decile_cuts')
 
     tbl1 = gb1.apply(lambda x: get_decile_metrics(x, target_name, score_name))
